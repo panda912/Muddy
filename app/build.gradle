@@ -17,6 +17,7 @@ apply plugin: 'com.panda912.muddy'
 
 muddy {
   key = 912
+  exclude = ['com.panda912.muddy.data']
 }
 
 android {

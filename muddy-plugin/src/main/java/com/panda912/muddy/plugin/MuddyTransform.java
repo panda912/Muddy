@@ -23,6 +23,7 @@ import com.android.build.gradle.internal.pipeline.TransformManager;
 import org.gradle.api.Project;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Set;
 
 /**
@@ -40,6 +41,7 @@ public class MuddyTransform extends Transform {
     project.afterEvaluate(p -> {
       System.out.println("-------------MuddyTransform--------------");
       System.out.println("ext: " + mExtension.key);
+      System.out.println("exclude: " + Arrays.toString(mExtension.exclude));
       System.out.println("-------------MuddyTransform--------------");
     });
   }
@@ -69,7 +71,7 @@ public class MuddyTransform extends Transform {
     IOException {
     super.transform(transformInvocation);
     System.out.println("-------------MuddyTransform--------------");
-    Muddy.create(transformInvocation, mExtension);
+    Muddy.transform(transformInvocation, mExtension);
     System.out.println("-------------MuddyTransform--------------");
   }
 

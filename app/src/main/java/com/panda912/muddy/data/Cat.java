@@ -12,12 +12,17 @@
  * limitations under the License.
  */
 
-package com.panda912.muddy.plugin;
+package com.panda912.muddy.data;
 
 /**
- * Created by panda on 2018/9/7 下午5:06.
+ * Created by panda on 2018/9/10 下午8:25.
  */
-public class MuddyExtension {
-  public int key;
-  public String[] exclude;
+public class Cat {
+
+  private String name;
+
+  public Cat() {
+    name = "duanwu";
+    System.out.println("call " + name);
+  }
 }

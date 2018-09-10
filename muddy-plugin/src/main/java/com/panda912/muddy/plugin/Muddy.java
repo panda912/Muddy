@@ -40,9 +40,10 @@ public class Muddy {
   private static final String CRYPTO_CLASS_REL_PATH = "/com/panda912/muddy/lib/Crypto.class";
 
   private MuddyExtension mExtension;
+  private boolean hasGeneratedCrypto;
 
-  public static Muddy create(TransformInvocation transformInvocation, MuddyExtension muddyExtension) {
-    return new Muddy(transformInvocation, muddyExtension);
+  public static void transform(TransformInvocation transformInvocation, MuddyExtension muddyExtension) {
+    new Muddy(transformInvocation, muddyExtension);
   }
 
   private Muddy(TransformInvocation transformInvocation, MuddyExtension muddyExtension) {
@@ -77,7 +78,7 @@ public class Muddy {
       System.err.println("outputs dir: " + outputDir.getAbsolutePath());
       System.err.println("inputs dir: " + inputDir.getAbsolutePath());
       try {
-        generateCryptoClass(inputDir);
+        generateCryptoClassOnce(inputDir);
         // copy input dir to output dir
         FileUtils.copyDirectory(inputDir, outputDir);
 
@@ -86,7 +87,16 @@ public class Muddy {
             System.err.println("inputDir.forEach: " + inputFile.getAbsolutePath());
             String out = inputFile.getAbsolutePath().replace(inputDir.getAbsolutePath(), outputDir.getAbsolutePath());
             if (!(inputDir.getAbsolutePath() + CRYPTO_CLASS_REL_PATH).equals(inputFile.getAbsolutePath())) {
-              apply(inputFile, new File(out));
+              if (mExtension.exclude != null) {
+                String path = inputFile.getAbsolutePath().replace(inputDir.getAbsolutePath(), "").replace(".class", "");
+                for (String exclude : mExtension.exclude) {
+                  if (!path.contains(exclude.replace(".", "/"))) {
+                    transform(inputFile, new File(out));
+                  }
+                }
+              } else {
+                transform(inputFile, new File(out));
+              }
             }
           }
         });
@@ -102,7 +112,11 @@ public class Muddy {
    * @param inputDir
    * @throws Exception
    */
-  private void generateCryptoClass(File inputDir) throws Exception {
+  private void generateCryptoClassOnce(File inputDir) throws Exception {
+    if (hasGeneratedCrypto) {
+      return;
+    }
+    hasGeneratedCrypto = true;
     // generate Crypto.class
     byte[] bytes = CryptoDump.dump(mExtension.key);
     FileUtils.mkdirs(new File(inputDir.getAbsolutePath() + "/com/panda912/muddy/lib"));
@@ -117,7 +131,7 @@ public class Muddy {
    * @param inputFile
    * @param outputFile
    */
-  private void apply(File inputFile, File outputFile) {
+  private void transform(File inputFile, File outputFile) {
     try {
       InputStream inputStream = new FileInputStream(inputFile);
       ClassReader cr = new ClassReader(inputStream);
