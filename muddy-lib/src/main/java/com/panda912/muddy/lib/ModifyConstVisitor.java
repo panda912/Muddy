@@ -25,7 +25,7 @@ import java.util.Map;
  * <p>
  * Created by panda on 2018/8/30 下午1:40.
  */
-public class ModifyConstVisitor extends MethodVisitor {
+public class ModifyConstVisitor extends MethodVisitor implements Opcodes {
   private String owner;
   private String name;
   private Map<String, String> map;
@@ -43,13 +43,12 @@ public class ModifyConstVisitor extends MethodVisitor {
 
   @Override
   public void visitCode() {
-    System.out.println("visitCode");
-    if (Constants.METHOD_CLINIT.equals(name) && map != null) {
+    if (C.CLINIT.equals(name) && map != null) {
       for (Map.Entry<String, String> entry : map.entrySet()) {
         mv.visitLdcInsn(entry.getValue());
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/panda912/muddy/lib/Crypto",
-          "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);
-        mv.visitFieldInsn(Opcodes.PUTSTATIC, owner, entry.getKey(), Constants.TYPE_STRING);
+        mv.visitMethodInsn(INVOKESTATIC, C.CRYPTO_CLASS, "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);
+        mv.visitFieldInsn(PUTSTATIC, owner, entry.getKey(), C.STRING);
+        System.out.println("visitCode: " + entry.getKey() + " " + entry.getValue());
       }
     }
     super.visitCode();
@@ -68,8 +67,7 @@ public class ModifyConstVisitor extends MethodVisitor {
 
       Crypto.setKey(key);
       mv.visitLdcInsn(Crypto.encode((String) cst));
-      mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/panda912/muddy/lib/Crypto",
-        "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);
+      mv.visitMethodInsn(INVOKESTATIC, C.CRYPTO_CLASS, "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);
     } else {
       super.visitLdcInsn(cst);
     }

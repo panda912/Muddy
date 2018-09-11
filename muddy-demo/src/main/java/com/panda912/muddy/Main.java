@@ -12,14 +12,32 @@
  * limitations under the License.
  */
 
-package com.panda912.muddy.lib;
+package com.panda912.muddy;
 
 /**
- * Created by panda on 2018/8/30 下午2:22.
+ * Created by panda on 2018/9/11 下午4:59.
  */
-public class Constants {
-  public static final String TYPE_STRING = "Ljava/lang/String;";
-  public static final String METHOD_INIT = "<init>";
-  public static final String METHOD_CLINIT = "<clinit>";
-  public static final String EXT_CLASS = "class";
+public class Main {
+
+  private String str;
+
+  Main() {
+
+  }
+
+  public void m() {
+    str = "this is ...";
+  }
+
+  public class Second {
+    private static final String SECOND = "second";
+
+    public Second() {
+      System.out.println(str);
+    }
+  }
+
+  public static class Thrid {
+    private static final String THRID = "Thrid";
+  }
 }

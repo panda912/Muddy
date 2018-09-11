@@ -28,7 +28,22 @@ public class MuddyPlugin implements Plugin<Project> {
   public void apply(Project project) {
     BaseExtension android = (BaseExtension) project.getExtensions().getByName("android");
     MuddyExtension muddyExtension = project.getExtensions().create("muddy", MuddyExtension.class);
-    MuddyTransform muddyTransform = new MuddyTransform(project, muddyExtension);
+    MuddyTransform muddyTransform = new MuddyTransform(muddyExtension);
     android.registerTransform(muddyTransform);
+
+    project.afterEvaluate(p -> {
+      System.out.println("-------------MuddyTransform--------------");
+      System.out.println("ext: " + muddyExtension.key);
+      if (muddyExtension.includes != null) {
+        System.out.println("includes: " + muddyExtension.includes.toString());
+      }
+      if (muddyExtension.excludes != null) {
+        if (muddyExtension.excludes.stream().anyMatch(exclude -> exclude.contains("$"))) {
+          throw new IllegalArgumentException("Muddy's 'exlcudes' donot support inner class!");
+        }
+        System.out.println("excludes: " + muddyExtension.excludes.toString());
+      }
+      System.out.println("-------------MuddyTransform--------------");
+    });
   }
 }

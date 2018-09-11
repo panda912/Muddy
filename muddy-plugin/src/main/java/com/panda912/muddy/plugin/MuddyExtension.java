@@ -14,10 +14,13 @@
 
 package com.panda912.muddy.plugin;
 
+import java.util.List;
+
 /**
  * Created by panda on 2018/9/7 下午5:06.
  */
 public class MuddyExtension {
   public int key;
-  public String[] exclude;
+  public List<String> includes;
+  public List<String> excludes;
 }

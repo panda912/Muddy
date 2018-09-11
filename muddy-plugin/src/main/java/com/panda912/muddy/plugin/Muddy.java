@@ -56,8 +56,8 @@ public class Muddy {
 
   private void handleJar(TransformInvocation transformInvocation, TransformInput transformInput) {
     transformInput.getJarInputs().forEach(jarInput -> {
-      File outputjar = transformInvocation.getOutputProvider().getContentLocation(jarInput.getName(),
-        jarInput.getContentTypes(), jarInput.getScopes(), Format.JAR);
+      File outputjar = transformInvocation.getOutputProvider().getContentLocation(jarInput.getName(), jarInput
+          .getContentTypes(), jarInput.getScopes(), Format.JAR);
       try {
         System.err.println("output jar: " + outputjar);
         Files.createParentDirs(outputjar);
@@ -71,8 +71,8 @@ public class Muddy {
   private void handleDirectory(TransformInvocation transformInvocation, TransformInput transformInput) {
     transformInput.getDirectoryInputs().forEach(input -> {
       File inputDir = input.getFile();
-      File outputDir = transformInvocation.getOutputProvider().getContentLocation(input.getName(),
-        input.getContentTypes(), input.getScopes(), Format.DIRECTORY);
+      File outputDir = transformInvocation.getOutputProvider().getContentLocation(input.getName(), input
+          .getContentTypes(), input.getScopes(), Format.DIRECTORY);
       FileUtils.mkdirs(outputDir);
 
       System.err.println("outputs dir: " + outputDir.getAbsolutePath());
@@ -82,24 +82,34 @@ public class Muddy {
         // copy input dir to output dir
         FileUtils.copyDirectory(inputDir, outputDir);
 
-        Files.fileTreeTraverser().preOrderTraversal(inputDir).forEach(inputFile -> {
-          if (inputFile.isFile() && inputFile.getName().endsWith(".class")) {
-            System.err.println("inputDir.forEach: " + inputFile.getAbsolutePath());
-            String out = inputFile.getAbsolutePath().replace(inputDir.getAbsolutePath(), outputDir.getAbsolutePath());
-            if (!(inputDir.getAbsolutePath() + CRYPTO_CLASS_REL_PATH).equals(inputFile.getAbsolutePath())) {
-              if (mExtension.exclude != null) {
-                String path = inputFile.getAbsolutePath().replace(inputDir.getAbsolutePath(), "").replace(".class", "");
-                for (String exclude : mExtension.exclude) {
-                  if (!path.contains(exclude.replace(".", "/"))) {
-                    transform(inputFile, new File(out));
-                  }
-                }
-              } else {
-                transform(inputFile, new File(out));
-              }
-            }
-          }
-        });
+        Files.fileTreeTraverser().preOrderTraversal(inputDir).stream()
+            .filter(file -> file.isFile() && file.getName().endsWith(".class")
+                && !(inputDir.getAbsolutePath() + CRYPTO_CLASS_REL_PATH).equals(file.getAbsolutePath()))
+            .filter(file -> {
+              String relativePath = file.getAbsolutePath().replace(inputDir.getAbsolutePath(), "");
+              return mExtension.excludes == null || mExtension.excludes.stream()
+                  .map(exclude -> exclude.replace(".", "/"))
+                  .noneMatch(exclude -> {
+                    String[] str = relativePath.split(exclude);
+                    return str[0] != null && str[0].endsWith("/") && str[1] != null && (str[1].startsWith("/") ||
+                        str[1].startsWith(".class"));
+                  });
+            })
+            .filter(file -> {
+              String relativePath = file.getAbsolutePath().replace(inputDir.getAbsolutePath(), "");
+              return mExtension.includes == null || mExtension.includes.stream()
+                  .map(exclude -> exclude.replace(".", "/"))
+                  .anyMatch(exclude -> {
+                    String[] str = relativePath.split(exclude);
+                    return str[0] != null && str[0].endsWith("/") && str[1] != null && (str[1].startsWith("/") ||
+                        str[1].startsWith(".class"));
+                  });
+            })
+            .forEach(inputFile -> {
+              System.err.println("inputDir.forEach: " + inputFile.getAbsolutePath());
+              String out = inputFile.getAbsolutePath().replace(inputDir.getAbsolutePath(), outputDir.getAbsolutePath());
+              transform(inputFile, new File(out));
+            });
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -117,6 +127,7 @@ public class Muddy {
       return;
     }
     hasGeneratedCrypto = true;
+
     // generate Crypto.class
     byte[] bytes = CryptoDump.dump(mExtension.key);
     FileUtils.mkdirs(new File(inputDir.getAbsolutePath() + "/com/panda912/muddy/lib"));

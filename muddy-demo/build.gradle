@@ -13,11 +13,12 @@
  */
 
 apply plugin: 'com.android.application'
-apply plugin: 'com.panda912.muddy'
 
+apply plugin: 'muddy'
 muddy {
   key = 912
-  exclude = ['com.panda912.muddy.data']
+  includes = ['com.panda912.muddy.MainActivity']
+  excludes = ['com.panda912.muddy.Main']
 }
 
 android {
@@ -30,11 +31,17 @@ android {
     versionName "1.0"
     testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
   }
+
   buildTypes {
     release {
       minifyEnabled false
       proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
     }
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
   }
 }
 

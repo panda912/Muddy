@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Created by panda on 2018/8/29 下午4:13.
  */
-public class ModifyClassVisitor extends ClassVisitor {
+public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
 
   private String owner;
 
@@ -35,6 +35,8 @@ public class ModifyClassVisitor extends ClassVisitor {
    * save the const field of [private/protected/public static final String]
    */
   private Map<String, String> constFieldMap;
+
+  private boolean clinitExist = false;
 
   private final int key;
 
@@ -53,15 +55,16 @@ public class ModifyClassVisitor extends ClassVisitor {
 
   @Override
   public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-    if (Constants.TYPE_STRING.equals(desc)) {
-      if (access == Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC + Opcodes.ACC_FINAL
-        || access == Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC + Opcodes.ACC_FINAL
-        || access == Opcodes.ACC_PROTECTED + Opcodes.ACC_STATIC + Opcodes.ACC_FINAL) {
+    if (C.STRING.equals(desc)) {
+      if (access == ACC_PUBLIC + ACC_STATIC + ACC_FINAL
+        || access == ACC_PRIVATE + ACC_STATIC + ACC_FINAL
+        || access == ACC_PROTECTED + ACC_STATIC + ACC_FINAL) {
         System.out.println("visitField: " + access + " " + name + " " + desc + " " + signature + " " + value);
 
         // 若想让静态常量的值为表达式，eg. private static final String TAG = Crypto.decode("GAT")
         // 需让 value 的值为 null，然后在类加载的时候，即在 clinit() 中进行赋值
         // 若原始常量值已经为表达式，则此处 value 为 null，已经在 clinit() 中进行了赋值操作，无需处理。
+        // 若类中只有静态常量，则不会生成 clinit()，需在类访问结束的时候手动插入 clinit()，并对静态常量赋表达式。
         if (value != null) {
           if (constFieldMap == null) {
             constFieldMap = new HashMap<>();
@@ -77,9 +80,28 @@ public class ModifyClassVisitor extends ClassVisitor {
 
   @Override
   public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-    System.out.println("visitMethod: " + name + " " + desc + " " + signature);
+    System.out.println("visitMethod: " + name);
+    clinitExist = C.CLINIT.equals(name) && !clinitExist;
 
     MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-    return new ModifyConstVisitor(Opcodes.ASM5, mv, owner, name, constFieldMap, key);
+    return new ModifyConstVisitor(ASM5, mv, owner, name, constFieldMap, key);
+  }
+
+  @Override
+  public void visitEnd() {
+    if (!clinitExist && constFieldMap != null) {
+      MethodVisitor mv = cv.visitMethod(ACC_STATIC, C.CLINIT, "()V", null, null);
+      for (Map.Entry<String, String> entry : constFieldMap.entrySet()) {
+        System.out.println("visitCode: " + owner + " " + entry.getKey() + " " + entry.getValue());
+
+        mv.visitLdcInsn(entry.getValue());
+        mv.visitMethodInsn(INVOKESTATIC, C.CRYPTO_CLASS, "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);
+        mv.visitFieldInsn(PUTSTATIC, owner, entry.getKey(), C.STRING);
+        mv.visitInsn(RETURN);
+        mv.visitMaxs(1, 0);
+        mv.visitEnd();
+      }
+    }
+    super.visitEnd();
   }
 }

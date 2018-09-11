@@ -12,11 +12,15 @@
  * limitations under the License.
  */
 
-package com.panda912.muddy.data;
+package com.panda912.muddy.lib;
 
 /**
- * Created by panda on 2018/9/10 下午8:09.
+ * Created by panda on 2018/8/30 下午2:22.
  */
-public class Dog {
-  public static final String NAME = "TAIDI";
+public class C {
+  public static final String STRING = "Ljava/lang/String;";
+  public static final String INIT = "<init>";
+  public static final String CLINIT = "<clinit>";
+  public static final String EXT_CLASS = "class";
+  public static final String CRYPTO_CLASS = "com/panda912/muddy/lib/Crypto";
 }
