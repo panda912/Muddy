@@ -59,7 +59,6 @@ public class Muddy {
       File outputjar = transformInvocation.getOutputProvider().getContentLocation(jarInput.getName(), jarInput
           .getContentTypes(), jarInput.getScopes(), Format.JAR);
       try {
-        System.err.println("output jar: " + outputjar);
         Files.createParentDirs(outputjar);
         Files.copy(jarInput.getFile(), outputjar);
       } catch (Exception e) {
@@ -74,9 +73,6 @@ public class Muddy {
       File outputDir = transformInvocation.getOutputProvider().getContentLocation(input.getName(), input
           .getContentTypes(), input.getScopes(), Format.DIRECTORY);
       FileUtils.mkdirs(outputDir);
-
-      System.err.println("outputs dir: " + outputDir.getAbsolutePath());
-      System.err.println("inputs dir: " + inputDir.getAbsolutePath());
       try {
         generateCryptoClassOnce(inputDir);
         // copy input dir to output dir
@@ -106,7 +102,6 @@ public class Muddy {
                   });
             })
             .forEach(inputFile -> {
-              System.err.println("inputDir.forEach: " + inputFile.getAbsolutePath());
               String out = inputFile.getAbsolutePath().replace(inputDir.getAbsolutePath(), outputDir.getAbsolutePath());
               transform(inputFile, new File(out));
             });

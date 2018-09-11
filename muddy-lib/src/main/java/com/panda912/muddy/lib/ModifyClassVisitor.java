@@ -47,8 +47,6 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
 
   @Override
   public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-    System.out.println("visit: " + name);
-
     owner = name;
     super.visit(version, access, name, signature, superName, interfaces);
   }
@@ -59,7 +57,6 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
       if (access == ACC_PUBLIC + ACC_STATIC + ACC_FINAL
         || access == ACC_PRIVATE + ACC_STATIC + ACC_FINAL
         || access == ACC_PROTECTED + ACC_STATIC + ACC_FINAL) {
-        System.out.println("visitField: " + access + " " + name + " " + desc + " " + signature + " " + value);
 
         // 若想让静态常量的值为表达式，eg. private static final String TAG = Crypto.decode("GAT")
         // 需让 value 的值为 null，然后在类加载的时候，即在 clinit() 中进行赋值
@@ -80,7 +77,6 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
 
   @Override
   public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-    System.out.println("visitMethod: " + name);
     clinitExist = C.CLINIT.equals(name) && !clinitExist;
 
     MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
@@ -92,8 +88,6 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
     if (!clinitExist && constFieldMap != null) {
       MethodVisitor mv = cv.visitMethod(ACC_STATIC, C.CLINIT, "()V", null, null);
       for (Map.Entry<String, String> entry : constFieldMap.entrySet()) {
-        System.out.println("visitCode: " + owner + " " + entry.getKey() + " " + entry.getValue());
-
         mv.visitLdcInsn(entry.getValue());
         mv.visitMethodInsn(INVOKESTATIC, C.CRYPTO_CLASS, "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);
         mv.visitFieldInsn(PUTSTATIC, owner, entry.getKey(), C.STRING);

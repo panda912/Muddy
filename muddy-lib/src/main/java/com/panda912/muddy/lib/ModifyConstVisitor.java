@@ -48,7 +48,6 @@ public class ModifyConstVisitor extends MethodVisitor implements Opcodes {
         mv.visitLdcInsn(entry.getValue());
         mv.visitMethodInsn(INVOKESTATIC, C.CRYPTO_CLASS, "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);
         mv.visitFieldInsn(PUTSTATIC, owner, entry.getKey(), C.STRING);
-        System.out.println("visitCode: " + entry.getKey() + " " + entry.getValue());
       }
     }
     super.visitCode();
@@ -63,8 +62,6 @@ public class ModifyConstVisitor extends MethodVisitor implements Opcodes {
   @Override
   public void visitLdcInsn(Object cst) {
     if (cst instanceof String) {
-      System.err.println("visitLdcInsn: " + cst);
-
       Crypto.setKey(key);
       mv.visitLdcInsn(Crypto.encode((String) cst));
       mv.visitMethodInsn(INVOKESTATIC, C.CRYPTO_CLASS, "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);

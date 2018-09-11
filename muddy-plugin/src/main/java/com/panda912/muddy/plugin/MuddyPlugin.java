@@ -33,7 +33,7 @@ public class MuddyPlugin implements Plugin<Project> {
 
     project.afterEvaluate(p -> {
       System.out.println("-------------MuddyTransform--------------");
-      System.out.println("ext: " + muddyExtension.key);
+      System.out.println("key: " + muddyExtension.key);
       if (muddyExtension.includes != null) {
         System.out.println("includes: " + muddyExtension.includes.toString());
       }
