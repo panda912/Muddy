@@ -12,31 +12,16 @@
  * limitations under the License.
  */
 
-package com.panda912.muddy.lib;
+package com.panda912.muddy;
 
 /**
- * Created by panda on 2018/9/7 下午5:19.
+ * Created by panda on 2018/9/12 下午2:33.
  */
-public class Crypto {
+public class IMain {
 
-  private static int KEY;
-  public static void setKey(int key) {
-    KEY = key;
-  }
+  private static final String AAA = "aaaaaa";
 
-  public static String encode(String plainText) {
-    return xor(plainText);
-  }
+  public IMain() {
 
-  public static String decode(String cipherText) {
-    return xor(cipherText);
-  }
-
-  private static String xor(String str) {
-    char[] c = str.toCharArray();
-    for (int i = 0; i < c.length; i++) {
-      c[i] = (char) (c[i] ^ KEY);
-    }
-    return new String(c);
   }
 }

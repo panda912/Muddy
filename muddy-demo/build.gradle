@@ -17,8 +17,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'muddy'
 muddy {
   key = 912
-  includes = ['com.panda912.muddy.MainActivity']
-  excludes = ['com.panda912.muddy.Main']
+  excludes = ['com.panda912.muddy.Main$Second']
 }
 
 android {

@@ -19,8 +19,8 @@ import com.android.build.api.transform.TransformInput;
 import com.android.build.api.transform.TransformInvocation;
 import com.android.utils.FileUtils;
 import com.google.common.io.Files;
-import com.panda912.muddy.lib.CryptoDump;
-import com.panda912.muddy.lib.ModifyClassVisitor;
+import com.panda912.muddy.plugin.bytecode.CryptoDump;
+import com.panda912.muddy.plugin.bytecode.ModifyClassVisitor;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -74,40 +74,47 @@ public class Muddy {
           .getContentTypes(), input.getScopes(), Format.DIRECTORY);
       FileUtils.mkdirs(outputDir);
       try {
+        // generate Crypto.class into input dir
         generateCryptoClassOnce(inputDir);
         // copy input dir to output dir
         FileUtils.copyDirectory(inputDir, outputDir);
-
-        Files.fileTreeTraverser().preOrderTraversal(inputDir).stream()
-            .filter(file -> file.isFile() && file.getName().endsWith(".class")
-                && !(inputDir.getAbsolutePath() + CRYPTO_CLASS_REL_PATH).equals(file.getAbsolutePath()))
-            .filter(file -> {
-              String relativePath = file.getAbsolutePath().replace(inputDir.getAbsolutePath(), "");
-              return mExtension.excludes == null || mExtension.excludes.stream()
-                  .map(exclude -> exclude.replace(".", "/"))
-                  .noneMatch(exclude -> {
-                    String[] str = relativePath.split(exclude);
-                    return str[0] != null && str[0].endsWith("/") && str[1] != null && (str[1].startsWith("/") ||
-                        str[1].startsWith(".class"));
-                  });
-            })
-            .filter(file -> {
-              String relativePath = file.getAbsolutePath().replace(inputDir.getAbsolutePath(), "");
-              return mExtension.includes == null || mExtension.includes.stream()
-                  .map(exclude -> exclude.replace(".", "/"))
-                  .anyMatch(exclude -> {
-                    String[] str = relativePath.split(exclude);
-                    return str[0] != null && str[0].endsWith("/") && str[1] != null && (str[1].startsWith("/") ||
-                        str[1].startsWith(".class"));
-                  });
-            })
-            .forEach(inputFile -> {
-              String out = inputFile.getAbsolutePath().replace(inputDir.getAbsolutePath(), outputDir.getAbsolutePath());
-              transform(inputFile, new File(out));
-            });
       } catch (Exception e) {
         e.printStackTrace();
       }
+
+      FileUtils.getAllFiles(inputDir).stream()
+          .filter(file -> file.getName().endsWith(".class"))
+          .filter(file -> !(inputDir.getAbsolutePath() + CRYPTO_CLASS_REL_PATH).equals(file.getAbsolutePath()))
+          .filter(file -> {
+            String classFile = file.getAbsolutePath().replace(inputDir.getAbsolutePath() + File.separator, "");
+            if (mExtension.includes != null) {
+              return mExtension.includes.stream()
+                  .map(exclude -> exclude.replace(".", "/"))
+                  .anyMatch(exclude -> {
+                    if (classFile.startsWith(exclude)) {
+                      String end = classFile.substring(exclude.length(), classFile.length());
+                      return end.startsWith("/") || end.startsWith(".class") || end.startsWith("$");
+                    }
+                    return false;
+                  });
+            } else if (mExtension.excludes != null) {
+              return mExtension.excludes.stream()
+                  .map(exclude -> exclude.replace(".", "/"))
+                  .noneMatch(exclude -> {
+                    if (classFile.startsWith(exclude)) {
+                      String end = classFile.substring(exclude.length(), classFile.length());
+                      return end.startsWith("/") || end.startsWith(".class") || end.startsWith("$");
+                    }
+                    return false;
+                  });
+            } else {
+              return true;
+            }
+          })
+          .forEach(inputFile -> {
+            String out = inputFile.getAbsolutePath().replace(inputDir.getAbsolutePath(), outputDir.getAbsolutePath());
+            transform(inputFile, new File(out));
+          });
     });
   }
 
@@ -123,7 +130,6 @@ public class Muddy {
     }
     hasGeneratedCrypto = true;
 
-    // generate Crypto.class
     byte[] bytes = CryptoDump.dump(mExtension.key);
     FileUtils.mkdirs(new File(inputDir.getAbsolutePath() + "/com/panda912/muddy/lib"));
     FileOutputStream fos = new FileOutputStream(inputDir.getAbsolutePath() + CRYPTO_CLASS_REL_PATH);
@@ -142,7 +148,7 @@ public class Muddy {
       InputStream inputStream = new FileInputStream(inputFile);
       ClassReader cr = new ClassReader(inputStream);
       ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-      ModifyClassVisitor cv = new ModifyClassVisitor(Opcodes.ASM5, cw, mExtension.key);
+      ModifyClassVisitor cv = new ModifyClassVisitor(Opcodes.ASM5, cw, mExtension);
       cr.accept(cv, Opcodes.ASM5);
       byte[] bytes = cw.toByteArray();
       FileOutputStream fos = new FileOutputStream(outputFile);

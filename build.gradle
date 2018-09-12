@@ -39,6 +39,29 @@ allprojects {
   }
 }
 
+subprojects { project ->
+  if (project.name == 'muddy-demo') {
+    return
+  }
+
+  apply plugin: 'maven'
+
+  group = 'com.panda912.muddy'
+  version = '0.0.1'
+
+  uploadArchives {
+    repositories {
+      mavenDeployer {
+        repository(url: uri('../repo'))
+      }
+    }
+  }
+}
+
 task clean(type: Delete) {
   delete rootProject.buildDir
+}
+
+task cleanRepo(type: Delete) {
+  delete file(rootDir.absolutePath + '/repo')
 }

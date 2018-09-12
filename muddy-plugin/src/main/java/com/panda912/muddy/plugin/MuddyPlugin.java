@@ -32,18 +32,32 @@ public class MuddyPlugin implements Plugin<Project> {
     android.registerTransform(muddyTransform);
 
     project.afterEvaluate(p -> {
-      System.out.println("-------------MuddyTransform--------------");
-      System.out.println("key: " + muddyExtension.key);
+      System.err.println("----------------------- Muddy Configuration ------------------------");
+      if (muddyExtension.includes != null && muddyExtension.excludes != null) {
+        throw new IllegalArgumentException("Muddy's `includes` and `excludes` must not be included at the same time!");
+      }
+
+      System.err.println("key: " + muddyExtension.key);
+
       if (muddyExtension.includes != null) {
-        System.out.println("includes: " + muddyExtension.includes.toString());
+        if (muddyExtension.includes.isEmpty()) {
+          throw new IllegalArgumentException("Muddy's `includes` must not be empty!");
+        }
+        if (muddyExtension.includes.stream().anyMatch(String::isEmpty)) {
+          throw new IllegalArgumentException("Muddy's `includes` item must not be empty!");
+        }
+        System.err.println("includes: " + muddyExtension.includes.toString());
       }
       if (muddyExtension.excludes != null) {
-        if (muddyExtension.excludes.stream().anyMatch(exclude -> exclude.contains("$"))) {
-          throw new IllegalArgumentException("Muddy's 'exlcudes' donot support inner class!");
+        if (muddyExtension.excludes.isEmpty()) {
+          throw new IllegalArgumentException("Muddy's `excludes` must not be empty!");
         }
-        System.out.println("excludes: " + muddyExtension.excludes.toString());
+        if (muddyExtension.excludes.stream().anyMatch(String::isEmpty)) {
+          throw new IllegalArgumentException("Muddy's `excludes` item must not be empty!");
+        }
+        System.err.println("excludes: " + muddyExtension.excludes.toString());
       }
-      System.out.println("-------------MuddyTransform--------------");
+      System.err.println("----------------------- Muddy Configuration ------------------------");
     });
   }
 }

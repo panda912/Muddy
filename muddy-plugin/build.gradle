@@ -12,14 +12,11 @@
  * limitations under the License.
  */
 
-apply plugin: 'maven'
-apply plugin: 'groovy'
+apply plugin: 'java'
 
 dependencies {
   implementation gradleApi()
-  implementation localGroovy()
   implementation 'com.android.tools.build:gradle:3.1.4'
-  implementation project(':muddy-lib')
   implementation fileTree(dir: 'libs', include: ['*.jar'])
 }
 
@@ -36,14 +33,3 @@ sourceSets {
 
 sourceCompatibility = "1.8"
 targetCompatibility = "1.8"
-
-group = 'com.panda912.muddy'
-version = '0.0.1'
-
-uploadArchives {
-  repositories {
-    mavenDeployer {
-      repository(url: uri('../repo'))
-    }
-  }
-}

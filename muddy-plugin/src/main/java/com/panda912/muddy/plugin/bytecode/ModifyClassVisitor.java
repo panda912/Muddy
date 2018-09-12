@@ -12,8 +12,24 @@
  * limitations under the License.
  */
 
-package com.panda912.muddy.lib;
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
+package com.panda912.muddy.plugin.bytecode;
+
+
+import com.panda912.muddy.plugin.MuddyExtension;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -38,11 +54,11 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
 
   private boolean clinitExist = false;
 
-  private final int key;
+  private final MuddyExtension muddyExtension;
 
-  public ModifyClassVisitor(int api, ClassVisitor cv, int key) {
+  public ModifyClassVisitor(int api, ClassVisitor cv, MuddyExtension extension) {
     super(api, cv);
-    this.key = key;
+    this.muddyExtension = extension;
   }
 
   @Override
@@ -53,20 +69,19 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
 
   @Override
   public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-    if (C.STRING.equals(desc)) {
-      if (access == ACC_PUBLIC + ACC_STATIC + ACC_FINAL
-        || access == ACC_PRIVATE + ACC_STATIC + ACC_FINAL
-        || access == ACC_PROTECTED + ACC_STATIC + ACC_FINAL) {
+    // 若想让静态常量的值为表达式，eg. private static final String TAG = Crypto.decode("GAT")
+    // 需让 value 的值为 null，然后在类加载的时候，即在 clinit() 中进行赋值
+    // 若原始常量值已经为表达式，则此处 value 为 null，已经在 clinit() 中进行了赋值操作，无需处理。
+    // 若类中只有静态常量，则不会生成 clinit()，需在类访问结束的时候手动插入 clinit()，并对静态常量赋表达式。
 
-        // 若想让静态常量的值为表达式，eg. private static final String TAG = Crypto.decode("GAT")
-        // 需让 value 的值为 null，然后在类加载的时候，即在 clinit() 中进行赋值
-        // 若原始常量值已经为表达式，则此处 value 为 null，已经在 clinit() 中进行了赋值操作，无需处理。
-        // 若类中只有静态常量，则不会生成 clinit()，需在类访问结束的时候手动插入 clinit()，并对静态常量赋表达式。
+    if (C.STRING.equals(desc)) {
+      if (access == ACC_PUBLIC + ACC_STATIC + ACC_FINAL || access == ACC_PRIVATE + ACC_STATIC + ACC_FINAL ||
+          access == ACC_PROTECTED + ACC_STATIC + ACC_FINAL) {
         if (value != null) {
           if (constFieldMap == null) {
             constFieldMap = new HashMap<>();
           }
-          Crypto.setKey(key);
+          Crypto.setKey(muddyExtension.key);
           constFieldMap.put(name, Crypto.encode((String) value));
         }
         return super.visitField(access, name, desc, signature, null);
@@ -80,7 +95,7 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
     clinitExist = C.CLINIT.equals(name) && !clinitExist;
 
     MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-    return new ModifyConstVisitor(ASM5, mv, owner, name, constFieldMap, key);
+    return new ModifyConstVisitor(ASM5, mv, owner, name, constFieldMap, muddyExtension.key);
   }
 
   @Override

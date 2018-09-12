@@ -17,12 +17,12 @@ package com.panda912.muddy;
 /**
  * Created by panda on 2018/9/11 下午4:59.
  */
-public class Main {
+public class Main extends IMain {
 
   private String str;
 
   Main() {
-
+    System.out.println(Thrid.THRID);
   }
 
   public void m() {
@@ -34,6 +34,10 @@ public class Main {
 
     public Second() {
       System.out.println(str);
+    }
+
+    private class Four {
+      private static final String FOUR = "Four";
     }
   }
 
