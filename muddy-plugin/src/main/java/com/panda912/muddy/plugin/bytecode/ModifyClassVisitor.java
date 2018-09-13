@@ -81,8 +81,7 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
           if (constFieldMap == null) {
             constFieldMap = new HashMap<>();
           }
-          Crypto.setKey(muddyExtension.key);
-          constFieldMap.put(name, Crypto.encode((String) value));
+          constFieldMap.put(name, Crypto.encode((String) value, muddyExtension.key));
         }
         return super.visitField(access, name, desc, signature, null);
       }

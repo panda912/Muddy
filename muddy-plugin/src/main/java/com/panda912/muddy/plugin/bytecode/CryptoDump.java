@@ -34,6 +34,29 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /**
+ * <pre>
+ * package com.panda912.muddy.lib;
+ *
+ * public class Crypto {
+ *
+ *   public static String encode(String plainText) {
+ *     return xor(plainText);
+ *   }
+ *
+ *   public static String decode(String cipherText) {
+ *     return xor(cipherText);
+ *   }
+ *
+ *   private static String xor(String str) {
+ *     char[] c = str.toCharArray();
+ *     for (int i = 0; i < c.length; i++) {
+ *       c[i] = (char) (c[i] ^ KEY);
+ *     }
+ *     return new String(c);
+ *   }
+ * }
+ * </pre>
+ * <p>
  * Created by panda on 2018/9/7 下午2:32.
  */
 public class CryptoDump implements Opcodes {
@@ -69,7 +92,8 @@ public class CryptoDump implements Opcodes {
       mv.visitLabel(l0);
       mv.visitLineNumber(22, l0);
       mv.visitVarInsn(ALOAD, 0);
-      mv.visitMethodInsn(INVOKESTATIC, "com/panda912/muddy/lib/Crypto", "xor", "(Ljava/lang/String;)Ljava/lang/String;", false);
+      mv.visitMethodInsn(INVOKESTATIC, "com/panda912/muddy/lib/Crypto", "xor", "(Ljava/lang/String;)" +
+          "Ljava/lang/String;", false);
       mv.visitInsn(ARETURN);
       Label l1 = new Label();
       mv.visitLabel(l1);
@@ -84,7 +108,8 @@ public class CryptoDump implements Opcodes {
       mv.visitLabel(l0);
       mv.visitLineNumber(26, l0);
       mv.visitVarInsn(ALOAD, 0);
-      mv.visitMethodInsn(INVOKESTATIC, "com/panda912/muddy/lib/Crypto", "xor", "(Ljava/lang/String;)Ljava/lang/String;", false);
+      mv.visitMethodInsn(INVOKESTATIC, "com/panda912/muddy/lib/Crypto", "xor", "(Ljava/lang/String;)" +
+          "Ljava/lang/String;", false);
       mv.visitInsn(ARETURN);
       Label l1 = new Label();
       mv.visitLabel(l1);

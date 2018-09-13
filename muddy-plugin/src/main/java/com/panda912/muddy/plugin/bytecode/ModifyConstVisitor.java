@@ -76,8 +76,7 @@ public class ModifyConstVisitor extends MethodVisitor implements Opcodes {
   @Override
   public void visitLdcInsn(Object cst) {
     if (cst instanceof String) {
-      Crypto.setKey(key);
-      mv.visitLdcInsn(Crypto.encode((String) cst));
+      mv.visitLdcInsn(Crypto.encode((String) cst, key));
       mv.visitMethodInsn(INVOKESTATIC, C.CRYPTO_CLASS, "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);
     } else {
       super.visitLdcInsn(cst);
