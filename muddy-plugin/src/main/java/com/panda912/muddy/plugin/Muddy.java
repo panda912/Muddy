@@ -37,8 +37,6 @@ import java.io.InputStream;
  */
 public class Muddy {
 
-  private static final String CRYPTO_CLASS_REL_PATH = "/com/panda912/muddy/lib/Crypto.class";
-
   private MuddyExtension mExtension;
   private boolean hasGeneratedCrypto;
 
@@ -73,9 +71,11 @@ public class Muddy {
       File outputDir = transformInvocation.getOutputProvider().getContentLocation(input.getName(), input
           .getContentTypes(), input.getScopes(), Format.DIRECTORY);
       FileUtils.mkdirs(outputDir);
+
+      String cryptoClassPath = inputDir.getAbsolutePath() + "/com/panda912/muddy/lib/Crypto.class";
       try {
         // generate Crypto.class into input dir
-        generateCryptoClassOnce(inputDir);
+        generateCryptoClassOnce(inputDir, cryptoClassPath);
         // copy input dir to output dir
         FileUtils.copyDirectory(inputDir, outputDir);
       } catch (Exception e) {
@@ -84,7 +84,7 @@ public class Muddy {
 
       FileUtils.getAllFiles(inputDir).stream()
           .filter(file -> file.getName().endsWith(".class"))
-          .filter(file -> !(inputDir.getAbsolutePath() + CRYPTO_CLASS_REL_PATH).equals(file.getAbsolutePath()))
+          .filter(file -> !cryptoClassPath.equals(file.getAbsolutePath()))
           .filter(file -> {
             String classFile = file.getAbsolutePath().replace(inputDir.getAbsolutePath() + File.separator, "");
             if (mExtension.includes != null) {
@@ -122,9 +122,10 @@ public class Muddy {
    * dynamic generate Crypto.class
    *
    * @param inputDir
+   * @param output output file's absolute path
    * @throws Exception
    */
-  private void generateCryptoClassOnce(File inputDir) throws Exception {
+  private void generateCryptoClassOnce(File inputDir, String output) throws Exception {
     if (hasGeneratedCrypto) {
       return;
     }
@@ -132,7 +133,7 @@ public class Muddy {
 
     byte[] bytes = CryptoDump.dump(mExtension.key);
     FileUtils.mkdirs(new File(inputDir.getAbsolutePath() + "/com/panda912/muddy/lib"));
-    FileOutputStream fos = new FileOutputStream(inputDir.getAbsolutePath() + CRYPTO_CLASS_REL_PATH);
+    FileOutputStream fos = new FileOutputStream(output);
     fos.write(bytes);
     fos.close();
   }

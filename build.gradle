@@ -61,7 +61,3 @@ subprojects { project ->
 task clean(type: Delete) {
   delete rootProject.buildDir
 }
-
-task cleanRepo(type: Delete) {
-  delete file(rootDir.absolutePath + '/repo')
-}

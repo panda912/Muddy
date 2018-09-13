@@ -32,12 +32,13 @@ public class MuddyPlugin implements Plugin<Project> {
     android.registerTransform(muddyTransform);
 
     project.afterEvaluate(p -> {
-      System.err.println("----------------------- Muddy Configuration ------------------------");
+      Log.init(project);
+      Log.lifecycle("----------------------- Muddy Configuration ------------------------");
       if (muddyExtension.includes != null && muddyExtension.excludes != null) {
         throw new IllegalArgumentException("Muddy's `includes` and `excludes` must not be included at the same time!");
       }
 
-      System.err.println("key: " + muddyExtension.key);
+      Log.lifecycle("key: " + muddyExtension.key);
 
       if (muddyExtension.includes != null) {
         if (muddyExtension.includes.isEmpty()) {
@@ -46,7 +47,7 @@ public class MuddyPlugin implements Plugin<Project> {
         if (muddyExtension.includes.stream().anyMatch(String::isEmpty)) {
           throw new IllegalArgumentException("Muddy's `includes` item must not be empty!");
         }
-        System.err.println("includes: " + muddyExtension.includes.toString());
+        Log.lifecycle("includes: " + muddyExtension.includes.toString());
       }
       if (muddyExtension.excludes != null) {
         if (muddyExtension.excludes.isEmpty()) {
@@ -55,9 +56,9 @@ public class MuddyPlugin implements Plugin<Project> {
         if (muddyExtension.excludes.stream().anyMatch(String::isEmpty)) {
           throw new IllegalArgumentException("Muddy's `excludes` item must not be empty!");
         }
-        System.err.println("excludes: " + muddyExtension.excludes.toString());
+        Log.lifecycle("excludes: " + muddyExtension.excludes.toString());
       }
-      System.err.println("----------------------- Muddy Configuration ------------------------");
+      Log.lifecycle("----------------------- Muddy Configuration ------------------------");
     });
   }
 }
