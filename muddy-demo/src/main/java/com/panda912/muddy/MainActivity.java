@@ -16,6 +16,7 @@ package com.panda912.muddy;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
@@ -23,10 +24,15 @@ public class MainActivity extends AppCompatActivity {
   private static final String TAG = "MainActivity";
   private String WEBSITE;
 
+  private TextView tv;
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+
+    tv = findViewById(R.id.tv);
+    tv.setText(Main.Thrid.THRID);
 
     WEBSITE = "http://panda912.com";
     Toast.makeText(this.getApplicationContext(), TAG, Toast.LENGTH_SHORT).show();

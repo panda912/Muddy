@@ -42,6 +42,6 @@ public class Main extends IMain {
   }
 
   public static class Thrid {
-    private static final String THRID = "Thrid";
+    public static final String THRID = "Thrid";
   }
 }
