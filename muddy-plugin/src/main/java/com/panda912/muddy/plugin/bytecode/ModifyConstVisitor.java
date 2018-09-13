@@ -43,13 +43,13 @@ public class ModifyConstVisitor extends MethodVisitor implements Opcodes {
   private String owner;
   private String name;
   private Map<String, String> map;
-  private final int key;
+  private final int muddyKey;
 
   ModifyConstVisitor(int api, MethodVisitor mv, String owner, String name, Map<String, String> map, int key) {
     super(api, mv);
     this.owner = owner;
     this.name = name;
-    this.key = key;
+    this.muddyKey = key;
     if (map != null) {
       this.map = map;
     }
@@ -76,7 +76,7 @@ public class ModifyConstVisitor extends MethodVisitor implements Opcodes {
   @Override
   public void visitLdcInsn(Object cst) {
     if (cst instanceof String) {
-      mv.visitLdcInsn(Crypto.encode((String) cst, key));
+      mv.visitLdcInsn(Crypto.encode((String) cst, muddyKey));
       mv.visitMethodInsn(INVOKESTATIC, C.CRYPTO_CLASS, "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);
     } else {
       super.visitLdcInsn(cst);

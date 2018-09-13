@@ -29,8 +29,6 @@
 package com.panda912.muddy.plugin.bytecode;
 
 
-import com.panda912.muddy.plugin.MuddyExtension;
-
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -54,11 +52,11 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
 
   private boolean clinitExist = false;
 
-  private final MuddyExtension muddyExtension;
+  private final int muddyKey;
 
-  public ModifyClassVisitor(int api, ClassVisitor cv, MuddyExtension extension) {
+  public ModifyClassVisitor(int api, ClassVisitor cv, int key) {
     super(api, cv);
-    this.muddyExtension = extension;
+    this.muddyKey = key;
   }
 
   @Override
@@ -81,7 +79,7 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
           if (constFieldMap == null) {
             constFieldMap = new HashMap<>();
           }
-          constFieldMap.put(name, Crypto.encode((String) value, muddyExtension.key));
+          constFieldMap.put(name, Crypto.encode((String) value, muddyKey));
         }
         return super.visitField(access, name, desc, signature, null);
       }
@@ -94,7 +92,7 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
     clinitExist = C.CLINIT.equals(name) && !clinitExist;
 
     MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-    return new ModifyConstVisitor(ASM5, mv, owner, name, constFieldMap, muddyExtension.key);
+    return new ModifyConstVisitor(ASM5, mv, owner, name, constFieldMap, muddyKey);
   }
 
   @Override
