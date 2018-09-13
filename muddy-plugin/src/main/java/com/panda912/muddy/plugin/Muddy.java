@@ -149,7 +149,7 @@ public class Muddy {
       InputStream inputStream = new FileInputStream(inputFile);
       ClassReader cr = new ClassReader(inputStream);
       ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-      ModifyClassVisitor cv = new ModifyClassVisitor(Opcodes.ASM5, cw, mExtension);
+      ModifyClassVisitor cv = new ModifyClassVisitor(Opcodes.ASM5, cw, mExtension.key);
       cr.accept(cv, Opcodes.ASM5);
       byte[] bytes = cw.toByteArray();
       FileOutputStream fos = new FileOutputStream(outputFile);
