@@ -20,7 +20,7 @@ import com.android.build.api.transform.TransformInvocation;
 import com.android.utils.FileUtils;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
-import com.panda912.muddy.plugin.bytecode.CryptoDump;
+import com.panda912.muddy.plugin.bytecode.GenerateCode;
 import com.panda912.muddy.plugin.bytecode.ModifyClassVisitor;
 
 import org.objectweb.asm.ClassReader;
@@ -190,7 +190,7 @@ public class Muddy {
     }
     hasGeneratedCrypto = true;
 
-    byte[] bytes = CryptoDump.dump(mExtension.key);
+    byte[] bytes = GenerateCode.generate(mExtension.key);
     Files.createParentDirs(new File(dest));
     FileOutputStream fos = new FileOutputStream(dest);
     fos.write(bytes);

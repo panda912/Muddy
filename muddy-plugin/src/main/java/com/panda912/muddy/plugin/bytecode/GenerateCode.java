@@ -59,9 +59,9 @@ import org.objectweb.asm.Opcodes;
  * <p>
  * Created by panda on 2018/9/7 下午2:32.
  */
-public class CryptoDump implements Opcodes {
+public class GenerateCode implements Opcodes {
 
-  public static byte[] dump(int key) {
+  public static byte[] generate(int key) {
 
     ClassWriter cw = new ClassWriter(0);
     MethodVisitor mv;
