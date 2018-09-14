@@ -78,8 +78,7 @@ public class Muddy {
               try {
                 String entryName = jarEntry.getName();
                 InputStream inputStream = jarFile.getInputStream(jarEntry);
-                JarEntry newJarEntry = new JarEntry(entryName);
-                jos.putNextEntry(newJarEntry);
+                jos.putNextEntry(new JarEntry(entryName));
                 if (entryName.endsWith(".class") && isInclude(mExtension.includeLibs, entryName)) {
                   jos.write(generateNewClassByteArray(inputStream));
                 } else {

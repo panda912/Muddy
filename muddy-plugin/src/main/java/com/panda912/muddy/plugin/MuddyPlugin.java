@@ -58,6 +58,15 @@ public class MuddyPlugin implements Plugin<Project> {
         }
         Log.lifecycle("excludes: " + muddyExtension.excludes.toString());
       }
+      if (muddyExtension.includeLibs != null) {
+        if (muddyExtension.includeLibs.isEmpty()) {
+          throw new IllegalArgumentException("Muddy's `includeLibs` must not be empty!");
+        }
+        if (muddyExtension.includeLibs.stream().anyMatch(String::isEmpty)) {
+          throw new IllegalArgumentException("Muddy's `includeLibs` item must not be empty!");
+        }
+        Log.lifecycle("includeLibs: " + muddyExtension.includeLibs.toString());
+      }
       Log.lifecycle("----------------------- Muddy Configuration ------------------------");
     });
   }
