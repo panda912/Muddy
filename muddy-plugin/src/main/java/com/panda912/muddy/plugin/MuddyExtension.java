@@ -23,4 +23,5 @@ public class MuddyExtension {
   public int key;
   public List<String> includes;
   public List<String> excludes;
+  public List<String> includeLibs;
 }

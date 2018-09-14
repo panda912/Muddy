@@ -23,7 +23,6 @@ import com.google.common.io.Files;
 import com.panda912.muddy.plugin.bytecode.CryptoDump;
 import com.panda912.muddy.plugin.bytecode.ModifyClassVisitor;
 
-import org.apache.commons.io.IOUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -33,6 +32,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
@@ -63,30 +63,34 @@ public class Muddy {
           .getContentTypes(), jarInput.getScopes(), Format.JAR);
       try {
         Files.createParentDirs(outputjar);
+        // if not config includeLibs, just copy all jars to dest dir
+        if (mExtension.includeLibs == null) {
+          Files.copy(jarInput.getFile(), outputjar);
+          return;
+        }
 
         JarOutputStream jos = new JarOutputStream(new FileOutputStream(outputjar));
-
+        // traverse jar
         JarFile jarFile = new JarFile(jarInput.getFile());
-        jarFile.stream().forEach(jarEntry -> {
-          Log.e(jarEntry.getName());
-          if (!jarEntry.isDirectory()) {
-            try {
-              InputStream inputStream = jarFile.getInputStream(jarEntry);
-              JarEntry newJarEntry = new JarEntry(jarEntry.getName());
-              jos.putNextEntry(newJarEntry);
-              if (jarEntry.getName().endsWith(".class")) {
-                jos.write(generateNewClassByteArray(inputStream));
-              } else {
-                jos.write(ByteStreams.toByteArray(inputStream));
+        jarFile.stream()
+            .filter(jarEntry -> !jarEntry.isDirectory())
+            .forEach(jarEntry -> {
+              try {
+                String entryName = jarEntry.getName();
+                InputStream inputStream = jarFile.getInputStream(jarEntry);
+                JarEntry newJarEntry = new JarEntry(entryName);
+                jos.putNextEntry(newJarEntry);
+                if (entryName.endsWith(".class") && isInclude(mExtension.includeLibs, entryName)) {
+                  jos.write(generateNewClassByteArray(inputStream));
+                } else {
+                  jos.write(ByteStreams.toByteArray(inputStream));
+                }
+              } catch (Exception e) {
+                e.printStackTrace();
               }
-            } catch (Exception e) {
-              e.printStackTrace();
-            }
-          }
-        });
+            });
         jos.finish();
         jos.close();
-        IOUtils.closeQuietly(jos);
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -103,7 +107,7 @@ public class Muddy {
       String cryptoClassPath = inputDir.getAbsolutePath() + "/com/panda912/muddy/lib/Crypto.class";
       try {
         // generate Crypto.class into input dir
-        generateCryptoClassOnce(inputDir, cryptoClassPath);
+        generateCryptoClassOnce(cryptoClassPath);
         // copy input dir to output dir
         FileUtils.copyDirectory(inputDir, outputDir);
       } catch (Exception e) {
@@ -114,27 +118,11 @@ public class Muddy {
           .filter(file -> file.getName().endsWith(".class"))
           .filter(file -> !cryptoClassPath.equals(file.getAbsolutePath()))
           .filter(file -> {
-            String classFile = file.getAbsolutePath().replace(inputDir.getAbsolutePath() + File.separator, "");
+            String className = file.getAbsolutePath().replace(inputDir.getAbsolutePath() + File.separator, "");
             if (mExtension.includes != null) {
-              return mExtension.includes.stream()
-                  .map(exclude -> exclude.replace(".", "/"))
-                  .anyMatch(exclude -> {
-                    if (classFile.startsWith(exclude)) {
-                      String end = classFile.substring(exclude.length(), classFile.length());
-                      return end.startsWith("/") || end.startsWith(".class") || end.startsWith("$");
-                    }
-                    return false;
-                  });
+              return isInclude(mExtension.includes, className);
             } else if (mExtension.excludes != null) {
-              return mExtension.excludes.stream()
-                  .map(exclude -> exclude.replace(".", "/"))
-                  .noneMatch(exclude -> {
-                    if (classFile.startsWith(exclude)) {
-                      String end = classFile.substring(exclude.length(), classFile.length());
-                      return end.startsWith("/") || end.startsWith(".class") || end.startsWith("$");
-                    }
-                    return false;
-                  });
+              return isNotExclude(className);
             } else {
               return true;
             }
@@ -155,21 +143,57 @@ public class Muddy {
   }
 
   /**
+   * for include mode
+   *
+   * @param className package + class
+   * @return true if the given class name is start with include rule and end with '/' or '$' or '.class', otherwise
+   * return false.
+   */
+  private boolean isInclude(List<String> includes, String className) {
+    return includes.stream()
+        .map(include -> include.replace(".", "/"))
+        .anyMatch(include -> {
+          if (className.startsWith(include)) {
+            String end = className.substring(include.length(), className.length());
+            return end.startsWith("/") || end.startsWith(".class") || end.startsWith("$");
+          }
+          return false;
+        });
+  }
+
+  /**
+   * for exclude mode
+   *
+   * @param className package + class
+   * @return false if the given class name is start with exclude rule and end with '/' or '$' or '.class', otherwise
+   * return true.
+   */
+  private boolean isNotExclude(String className) {
+    return mExtension.excludes.stream()
+        .map(exclude -> exclude.replace(".", "/"))
+        .noneMatch(exclude -> {
+          if (className.startsWith(exclude)) {
+            String end = className.substring(exclude.length(), className.length());
+            return end.startsWith("/") || end.startsWith(".class") || end.startsWith("$");
+          }
+          return true;
+        });
+  }
+
+  /**
    * dynamic generate Crypto.class
    *
-   * @param inputDir
-   * @param output   output file's absolute path
-   * @throws Exception
+   * @param dest output file's absolute path
    */
-  private void generateCryptoClassOnce(File inputDir, String output) throws Exception {
+  private void generateCryptoClassOnce(String dest) throws IOException {
     if (hasGeneratedCrypto) {
       return;
     }
     hasGeneratedCrypto = true;
 
     byte[] bytes = CryptoDump.dump(mExtension.key);
-    FileUtils.mkdirs(new File(inputDir.getAbsolutePath() + "/com/panda912/muddy/lib"));
-    FileOutputStream fos = new FileOutputStream(output);
+    Files.createParentDirs(new File(dest));
+    FileOutputStream fos = new FileOutputStream(dest);
     fos.write(bytes);
     fos.close();
   }
@@ -177,7 +201,7 @@ public class Muddy {
   /**
    * modify input class and then output to dist file
    *
-   * @param inputStream
+   * @param inputStream class inputstream to be modified
    */
   private byte[] generateNewClassByteArray(InputStream inputStream) throws IOException {
     ClassReader cr = new ClassReader(inputStream);

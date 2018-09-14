@@ -61,7 +61,7 @@ import org.objectweb.asm.Opcodes;
  */
 public class CryptoDump implements Opcodes {
 
-  public static byte[] dump(int key) throws Exception {
+  public static byte[] dump(int key) {
 
     ClassWriter cw = new ClassWriter(0);
     MethodVisitor mv;
