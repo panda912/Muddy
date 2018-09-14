@@ -20,15 +20,20 @@ import java.util.List;
  * Created by panda on 2018/9/7 下午5:06.
  */
 public class MuddyExtension {
+  /**
+   * the muddy key
+   */
   public int key;
   /**
    * include project's package or class. must be start with root package.
-   * can not be config with 'excludes'.
+   * if you config this attribute, it means that the project will not be muddy except 'includes'.
+   * can not be used with 'excludes'.
    */
   public List<String> includes;
   /**
    * exclude project's package or class. must be start with root package.
-   * can not be config with 'includes'.
+   * if you config this attribute, it means that the project will be muddy except 'excludes'.
+   * can not be used with 'excludes'.
    */
   public List<String> excludes;
   /**
