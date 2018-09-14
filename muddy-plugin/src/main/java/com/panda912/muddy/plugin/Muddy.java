@@ -18,10 +18,12 @@ import com.android.build.api.transform.Format;
 import com.android.build.api.transform.TransformInput;
 import com.android.build.api.transform.TransformInvocation;
 import com.android.utils.FileUtils;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.panda912.muddy.plugin.bytecode.CryptoDump;
 import com.panda912.muddy.plugin.bytecode.ModifyClassVisitor;
 
+import org.apache.commons.io.IOUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -31,6 +33,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.jar.JarOutputStream;
 
 /**
  * Created by panda on 2018/9/7 下午5:48.
@@ -58,7 +63,30 @@ public class Muddy {
           .getContentTypes(), jarInput.getScopes(), Format.JAR);
       try {
         Files.createParentDirs(outputjar);
-        Files.copy(jarInput.getFile(), outputjar);
+
+        JarOutputStream jos = new JarOutputStream(new FileOutputStream(outputjar));
+
+        JarFile jarFile = new JarFile(jarInput.getFile());
+        jarFile.stream().forEach(jarEntry -> {
+          Log.e(jarEntry.getName());
+          if (!jarEntry.isDirectory()) {
+            try {
+              InputStream inputStream = jarFile.getInputStream(jarEntry);
+              JarEntry newJarEntry = new JarEntry(jarEntry.getName());
+              jos.putNextEntry(newJarEntry);
+              if (jarEntry.getName().endsWith(".class")) {
+                jos.write(generateNewClassByteArray(inputStream));
+              } else {
+                jos.write(ByteStreams.toByteArray(inputStream));
+              }
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+          }
+        });
+        jos.finish();
+        jos.close();
+        IOUtils.closeQuietly(jos);
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -113,7 +141,15 @@ public class Muddy {
           })
           .forEach(inputFile -> {
             String out = inputFile.getAbsolutePath().replace(inputDir.getAbsolutePath(), outputDir.getAbsolutePath());
-            transform(inputFile, new File(out));
+            try {
+              byte[] bytes = generateNewClassByteArray(new FileInputStream(inputFile));
+              FileOutputStream fos = new FileOutputStream(out);
+              fos.write(bytes);
+              fos.flush();
+              fos.close();
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
           });
     });
   }
@@ -122,7 +158,7 @@ public class Muddy {
    * dynamic generate Crypto.class
    *
    * @param inputDir
-   * @param output output file's absolute path
+   * @param output   output file's absolute path
    * @throws Exception
    */
   private void generateCryptoClassOnce(File inputDir, String output) throws Exception {
@@ -141,24 +177,14 @@ public class Muddy {
   /**
    * modify input class and then output to dist file
    *
-   * @param inputFile
-   * @param outputFile
+   * @param inputStream
    */
-  private void transform(File inputFile, File outputFile) {
-    try {
-      InputStream inputStream = new FileInputStream(inputFile);
-      ClassReader cr = new ClassReader(inputStream);
-      ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-      ModifyClassVisitor cv = new ModifyClassVisitor(Opcodes.ASM5, cw, mExtension.key);
-      cr.accept(cv, Opcodes.ASM5);
-      byte[] bytes = cw.toByteArray();
-      FileOutputStream fos = new FileOutputStream(outputFile);
-      fos.write(bytes);
-      fos.flush();
-      fos.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+  private byte[] generateNewClassByteArray(InputStream inputStream) throws IOException {
+    ClassReader cr = new ClassReader(inputStream);
+    ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+    ModifyClassVisitor cv = new ModifyClassVisitor(Opcodes.ASM5, cw, mExtension.key);
+    cr.accept(cv, Opcodes.ASM5);
+    return cw.toByteArray();
   }
 
 }
