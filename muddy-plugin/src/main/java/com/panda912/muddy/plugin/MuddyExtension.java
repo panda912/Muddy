@@ -21,7 +21,18 @@ import java.util.List;
  */
 public class MuddyExtension {
   public int key;
+  /**
+   * include project's package or class. must be start with root package.
+   * can not be config with 'excludes'.
+   */
   public List<String> includes;
+  /**
+   * exclude project's package or class. must be start with root package.
+   * can not be config with 'includes'.
+   */
   public List<String> excludes;
+  /**
+   * include third libraries. p.s. not moddy jars by default.
+   */
   public List<String> includeLibs;
 }
