@@ -25,7 +25,7 @@ buildscript {
   }
   dependencies {
     classpath 'com.android.tools.build:gradle:3.1.4'
-    classpath 'com.panda912.muddy:muddy-plugin:0.0.1'
+    classpath 'com.panda912.muddy:plugin:1.0.0'
 
     // NOTE: Do not place your application dependencies here; they belong
     // in the individual module build.gradle files
@@ -46,13 +46,16 @@ subprojects { project ->
 
   apply plugin: 'maven'
 
-  group = 'com.panda912.muddy'
-  version = '0.0.1'
+//  group = 'com.panda912.muddy'
+//  version = '1.0.0'
 
   uploadArchives {
     repositories {
       mavenDeployer {
         repository(url: uri('../repo'))
+        pom.groupId = 'com.panda912.muddy'
+        pom.artifactId = 'plugin'
+        pom.version = '1.0.0'
       }
     }
   }
