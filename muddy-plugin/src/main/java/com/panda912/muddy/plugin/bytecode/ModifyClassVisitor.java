@@ -99,14 +99,14 @@ public class ModifyClassVisitor extends ClassVisitor implements Opcodes {
   public void visitEnd() {
     if (!clinitExist && constFieldMap != null) {
       MethodVisitor mv = cv.visitMethod(ACC_STATIC, C.CLINIT, "()V", null, null);
-      for (Map.Entry<String, String> entry : constFieldMap.entrySet()) {
-        mv.visitLdcInsn(entry.getValue());
+      constFieldMap.forEach((key, value) -> {
+        mv.visitLdcInsn(value);
         mv.visitMethodInsn(INVOKESTATIC, C.CRYPTO_CLASS, "decode", "(Ljava/lang/String;)Ljava/lang/String;", false);
-        mv.visitFieldInsn(PUTSTATIC, owner, entry.getKey(), C.STRING);
+        mv.visitFieldInsn(PUTSTATIC, owner, key, C.STRING);
         mv.visitInsn(RETURN);
         mv.visitMaxs(1, 0);
         mv.visitEnd();
-      }
+      });
     }
     super.visitEnd();
   }

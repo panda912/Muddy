@@ -144,7 +144,7 @@ public class Muddy {
   /**
    * for include mode
    *
-   * @param className package + class
+   * @param className package.class / package.outclass$innerclass
    * @return true if the given class name is start with include rule and end with '/' or '$' or '.class', otherwise
    * return false.
    */
@@ -163,7 +163,7 @@ public class Muddy {
   /**
    * for exclude mode
    *
-   * @param className package + class
+   * @param className package.class / package.outclass$innerclass
    * @return false if the given class name is start with exclude rule and end with '/' or '$' or '.class', otherwise
    * return true.
    */
