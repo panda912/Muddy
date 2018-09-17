@@ -52,12 +52,12 @@ public class Muddy {
   private Muddy(TransformInvocation transformInvocation, MuddyExtension muddyExtension) {
     mExtension = muddyExtension;
     transformInvocation.getInputs().forEach(transformInput -> {
-      handleJar(transformInvocation, transformInput);
-      handleDirectory(transformInvocation, transformInput);
+      processJar(transformInvocation, transformInput);
+      processDirectory(transformInvocation, transformInput);
     });
   }
 
-  private void handleJar(TransformInvocation transformInvocation, TransformInput transformInput) {
+  private void processJar(TransformInvocation transformInvocation, TransformInput transformInput) {
     transformInput.getJarInputs().forEach(jarInput -> {
       File outputjar = transformInvocation.getOutputProvider().getContentLocation(jarInput.getName(), jarInput
           .getContentTypes(), jarInput.getScopes(), Format.JAR);
@@ -96,50 +96,76 @@ public class Muddy {
     });
   }
 
-  private void handleDirectory(TransformInvocation transformInvocation, TransformInput transformInput) {
+  private void processDirectory(TransformInvocation transformInvocation, TransformInput transformInput) {
     transformInput.getDirectoryInputs().forEach(input -> {
+      //eg. if the class file's absolute path is {@code /a/b/package/A.class}, this returns {@code /a/b}.
       File inputDir = input.getFile();
       String inputDirPath = inputDir.getAbsolutePath();
       File outputDir = transformInvocation.getOutputProvider().getContentLocation(input.getName(), input
           .getContentTypes(), input.getScopes(), Format.DIRECTORY);
-      FileUtils.mkdirs(outputDir);
-
-      File cryptoClassFile = new File(inputDirPath + "/com/panda912/muddy/lib/Crypto.class");
-      try {
-        // generate Crypto.class into input dir
-        generateCryptoClassOnce(cryptoClassFile);
-        // copy input dir to output dir
-        FileUtils.copyDirectory(inputDir, outputDir);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-
-      FileUtils.getAllFiles(inputDir).stream()
-          .filter(file -> {
-            String className = file.getAbsolutePath().replace(inputDirPath + "/", "");
-            if (file.getName().endsWith(".class") && !cryptoClassFile.equals(file)) {
-              if (mExtension.includes != null) {
-                return isInclude(mExtension.includes, className);
-              } else if (mExtension.excludes != null) {
-                return isNotExclude(className);
-              } else {
-                return true;
-              }
-            }
-            return false;
-          })
-          .forEach(inputFile -> {
-            String out = inputFile.getAbsolutePath().replace(inputDirPath, outputDir.getAbsolutePath());
+      if (transformInvocation.isIncremental()) {
+        input.getChangedFiles().forEach((inputFile, status) -> {
+          if (inputFile.isFile() && inputFile.getName().endsWith(".class")) {
             try {
-              byte[] bytes = generateNewClassByteArray(new FileInputStream(inputFile));
-              FileOutputStream fos = new FileOutputStream(out);
-              fos.write(bytes);
-              fos.flush();
-              fos.close();
+              File destFile = getOutputFile(inputDir, inputFile, outputDir);
+              switch (status) {
+                case REMOVED:
+                  FileUtils.deleteIfExists(destFile);
+                  break;
+                case CHANGED:
+                  FileUtils.deleteIfExists(destFile);
+                case ADDED:
+                  byte[] bytes = generateNewClassByteArray(new FileInputStream(inputFile));
+                  FileOutputStream fos = new FileOutputStream(destFile);
+                  fos.write(bytes);
+                  fos.flush();
+                  fos.close();
+                  break;
+              }
             } catch (IOException e) {
               e.printStackTrace();
             }
-          });
+          }
+        });
+      } else {
+        FileUtils.mkdirs(outputDir);
+
+        File cryptoClassFile = new File(inputDirPath + "/com/panda912/muddy/lib/Crypto.class");
+        try {
+          // generate Crypto.class into input dir
+          generateCryptoClassOnce(cryptoClassFile);
+          // copy input dir to output dir
+          FileUtils.copyDirectory(inputDir, outputDir);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+
+        FileUtils.getAllFiles(inputDir).stream()
+            .filter(file -> {
+              String className = file.getAbsolutePath().replace(inputDirPath + "/", "");
+              if (file.getName().endsWith(".class") && !cryptoClassFile.equals(file)) {
+                if (mExtension.includes != null) {
+                  return isInclude(mExtension.includes, className);
+                } else if (mExtension.excludes != null) {
+                  return isNotExclude(className);
+                } else {
+                  return true;
+                }
+              }
+              return false;
+            })
+            .forEach(inputFile -> {
+              try {
+                byte[] bytes = generateNewClassByteArray(new FileInputStream(inputFile));
+                FileOutputStream fos = new FileOutputStream(getOutputFile(inputDir, inputFile, outputDir));
+                fos.write(bytes);
+                fos.flush();
+                fos.close();
+              } catch (IOException e) {
+                e.printStackTrace();
+              }
+            });
+      }
     });
   }
 
@@ -210,6 +236,20 @@ public class Muddy {
     ModifyClassVisitor cv = new ModifyClassVisitor(Opcodes.ASM5, cw, mExtension.key);
     cr.accept(cv, Opcodes.ASM5);
     return cw.toByteArray();
+  }
+
+  /**
+   * eg. input directory's absolute path is {@code /a/b}, input file's absolute path is {@code /a/b/c/A.class},
+   * output directory's absolute path is @{code /d/e}, then the output file's absolute path is {@code /d/e/c/A.class}
+   *
+   * @param inputDir
+   * @param inputFile
+   * @param outputDir
+   * @return output file's absolute path
+   */
+  private static File getOutputFile(File inputDir, File inputFile, File outputDir) {
+    String relativePath = FileUtils.relativePossiblyNonExistingPath(inputFile, inputDir);
+    return new File(outputDir, relativePath);
   }
 
 }

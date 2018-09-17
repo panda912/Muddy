@@ -51,13 +51,14 @@ public class MuddyTransform extends Transform {
 
   @Override
   public boolean isIncremental() {
-    return false;
+    return true;
   }
 
   @Override
   public void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException,
       IOException {
     super.transform(transformInvocation);
+    Log.e("transform isIncremental=" + transformInvocation.isIncremental());
     Muddy.transform(transformInvocation, mExtension);
   }
 
