@@ -27,47 +27,48 @@ public class MuddyPlugin implements Plugin<Project> {
   @Override
   public void apply(Project project) {
     BaseExtension android = (BaseExtension) project.getExtensions().getByName("android");
-    MuddyExtension muddyExtension = project.getExtensions().create("muddy", MuddyExtension.class);
-    MuddyTransform muddyTransform = new MuddyTransform(muddyExtension);
+    MuddyExtension extension = project.getExtensions().create("muddy", MuddyExtension.class);
+    MuddyTransform muddyTransform = new MuddyTransform(extension);
     android.registerTransform(muddyTransform);
 
     project.afterEvaluate(p -> {
       Log.init(project);
       Log.lifecycle("----------------------- Muddy Configuration ------------------------");
-      if (muddyExtension.includes != null && muddyExtension.excludes != null) {
+      if (extension.includes != null && extension.excludes != null) {
         throw new IllegalArgumentException("Muddy's `includes` and `excludes` must not be included at the same time!");
       }
 
-      Log.lifecycle("key: " + muddyExtension.key);
+      Log.lifecycle("key: " + extension.key);
 
-      if (muddyExtension.includes != null) {
-        if (muddyExtension.includes.isEmpty()) {
+      if (extension.includes != null) {
+        if (extension.includes.isEmpty()) {
           throw new IllegalArgumentException("Muddy's `includes` must not be empty!");
         }
-        if (muddyExtension.includes.stream().anyMatch(String::isEmpty)) {
+        if (extension.includes.stream().anyMatch(String::isEmpty)) {
           throw new IllegalArgumentException("Muddy's `includes` item must not be empty!");
         }
-        Log.lifecycle("includes: " + muddyExtension.includes.toString());
+        Log.lifecycle("includes: " + extension.includes.toString());
       }
-      if (muddyExtension.excludes != null) {
-        if (muddyExtension.excludes.isEmpty()) {
+      if (extension.excludes != null) {
+        if (extension.excludes.isEmpty()) {
           throw new IllegalArgumentException("Muddy's `excludes` must not be empty!");
         }
-        if (muddyExtension.excludes.stream().anyMatch(String::isEmpty)) {
+        if (extension.excludes.stream().anyMatch(String::isEmpty)) {
           throw new IllegalArgumentException("Muddy's `excludes` item must not be empty!");
         }
-        Log.lifecycle("excludes: " + muddyExtension.excludes.toString());
+        Log.lifecycle("excludes: " + extension.excludes.toString());
       }
-      if (muddyExtension.includeLibs != null) {
-        if (muddyExtension.includeLibs.isEmpty()) {
+      if (extension.includeLibs != null) {
+        if (extension.includeLibs.isEmpty()) {
           throw new IllegalArgumentException("Muddy's `includeLibs` must not be empty!");
         }
-        if (muddyExtension.includeLibs.stream().anyMatch(String::isEmpty)) {
+        if (extension.includeLibs.stream().anyMatch(String::isEmpty)) {
           throw new IllegalArgumentException("Muddy's `includeLibs` item must not be empty!");
         }
-        Log.lifecycle("includeLibs: " + muddyExtension.includeLibs.toString());
+        Log.lifecycle("includeLibs: " + extension.includeLibs.toString());
       }
       Log.lifecycle("----------------------- Muddy Configuration ------------------------");
     });
+
   }
 }

@@ -43,15 +43,15 @@ import java.util.jar.JarOutputStream;
  */
 public class Muddy {
 
-  private MuddyExtension mExtension;
+  private MuddyExtension extension;
   private boolean hasGeneratedCrypto;
 
-  public static void transform(TransformInvocation transformInvocation, MuddyExtension muddyExtension) {
-    new Muddy(transformInvocation, muddyExtension);
+  public static void transform(TransformInvocation transformInvocation, MuddyExtension extension) {
+    new Muddy(transformInvocation, extension);
   }
 
-  private Muddy(TransformInvocation transformInvocation, MuddyExtension muddyExtension) {
-    mExtension = muddyExtension;
+  private Muddy(TransformInvocation transformInvocation, MuddyExtension extension) {
+    this.extension = extension;
     transformInvocation.getInputs().forEach(transformInput -> {
       processJar(transformInvocation, transformInput);
       processDirectory(transformInvocation, transformInput);
@@ -67,7 +67,7 @@ public class Muddy {
         FileUtils.deleteIfExists(outputjar);
         Files.createParentDirs(outputjar);
         // if not config includeLibs, just copy all jars to dest dir
-        if (mExtension.includeLibs == null) {
+        if (extension.includeLibs == null) {
           Files.copy(jarInput.getFile(), outputjar);
           return;
         }
@@ -82,7 +82,7 @@ public class Muddy {
                 String entryName = jarEntry.getName();
                 InputStream inputStream = jarFile.getInputStream(jarEntry);
                 jos.putNextEntry(new JarEntry(entryName));
-                if (entryName.endsWith(".class") && isInclude(mExtension.includeLibs, entryName)) {
+                if (entryName.endsWith(".class") && isInclude(extension.includeLibs, entryName)) {
                   jos.write(generateNewClassByteArray(inputStream));
                 } else {
                   jos.write(ByteStreams.toByteArray(inputStream));
@@ -116,6 +116,7 @@ public class Muddy {
                   break;
                 case CHANGED:
                 case ADDED:
+                  Log.e(status + ": " + destFile);
                   // added status delete dest file due to Crypto.class
                   FileUtils.deleteIfExists(destFile);
                   Files.createParentDirs(destFile);
@@ -140,7 +141,8 @@ public class Muddy {
             Util.toSystemIndependentPath("/com/panda912/muddy/lib/Crypto.class"));
         try {
           // traverse delete old output dir
-          FileUtils.deleteIfExists(outputDir);
+          FileUtils.deletePath(outputDir);
+
           FileUtils.mkdirs(outputDir);
           // generate Crypto.class into input dir
           generateCryptoClassOnce(cryptoClassFile);
@@ -154,9 +156,9 @@ public class Muddy {
             .filter(file -> {
               String className = Util.getRelativePath(file, inputDir);
               if (file.getName().endsWith(".class") && !cryptoClassFile.equals(file)) {
-                if (mExtension.includes != null) {
-                  return isInclude(mExtension.includes, className);
-                } else if (mExtension.excludes != null) {
+                if (extension.includes != null) {
+                  return isInclude(extension.includes, className);
+                } else if (extension.excludes != null) {
                   return isNotExclude(className);
                 } else {
                   return true;
@@ -208,14 +210,14 @@ public class Muddy {
    */
   private boolean isNotExclude(String className) {
     String classPath = Util.toSystemIndependentPath(className);
-    return mExtension.excludes.stream()
+    return extension.excludes.stream()
         .map(exclude -> exclude.replace(".", "/"))
         .noneMatch(exclude -> {
           if (classPath.startsWith(exclude)) {
             String end = classPath.substring(exclude.length(), classPath.length());
             return end.startsWith("/") || end.startsWith(".class") || end.startsWith("$");
           }
-          return true;
+          return false;
         });
   }
 
@@ -230,7 +232,7 @@ public class Muddy {
     }
     hasGeneratedCrypto = true;
 
-    byte[] bytes = GenerateCode.generate(mExtension.key);
+    byte[] bytes = GenerateCode.generate(extension.key);
     Files.createParentDirs(dest);
     FileOutputStream fos = new FileOutputStream(dest);
     fos.write(bytes);
@@ -245,7 +247,7 @@ public class Muddy {
   private byte[] generateNewClassByteArray(InputStream inputStream) throws IOException {
     ClassReader cr = new ClassReader(inputStream);
     ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-    ModifyClassVisitor cv = new ModifyClassVisitor(Opcodes.ASM5, cw, mExtension.key);
+    ModifyClassVisitor cv = new ModifyClassVisitor(Opcodes.ASM5, cw, extension.key);
     cr.accept(cv, Opcodes.ASM5);
     return cw.toByteArray();
   }
