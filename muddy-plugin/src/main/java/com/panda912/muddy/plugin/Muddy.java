@@ -29,6 +29,7 @@ import org.objectweb.asm.Opcodes;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,6 +63,8 @@ public class Muddy {
       File outputjar = transformInvocation.getOutputProvider().getContentLocation(jarInput.getName(), jarInput
           .getContentTypes(), jarInput.getScopes(), Format.JAR);
       try {
+        // traverse delete old jar file
+        FileUtils.deleteIfExists(outputjar);
         Files.createParentDirs(outputjar);
         // if not config includeLibs, just copy all jars to dest dir
         if (mExtension.includeLibs == null) {
@@ -108,18 +111,25 @@ public class Muddy {
           if (inputFile.isFile() && inputFile.getName().endsWith(".class")) {
             try {
               File destFile = getOutputFile(inputDir, inputFile, outputDir);
+              Log.e(inputFile.getAbsolutePath() + " " + destFile.getAbsolutePath() + " " + status);
               switch (status) {
                 case REMOVED:
                   FileUtils.deleteIfExists(destFile);
                   break;
                 case CHANGED:
-                  FileUtils.deleteIfExists(destFile);
                 case ADDED:
-                  byte[] bytes = generateNewClassByteArray(new FileInputStream(inputFile));
-                  FileOutputStream fos = new FileOutputStream(destFile);
-                  fos.write(bytes);
-                  fos.flush();
-                  fos.close();
+                  // added status delete dest file due to Crypto.class
+                  FileUtils.deleteIfExists(destFile);
+                  Files.createParentDirs(destFile);
+                  if (destFile.createNewFile()) {
+                    byte[] bytes = generateNewClassByteArray(new FileInputStream(inputFile));
+                    FileOutputStream fos = new FileOutputStream(destFile);
+                    fos.write(bytes);
+                    fos.flush();
+                    fos.close();
+                  } else {
+                    throw new FileNotFoundException(destFile.getAbsolutePath() + " not found, please clean and retry!");
+                  }
                   break;
               }
             } catch (IOException e) {
@@ -128,10 +138,11 @@ public class Muddy {
           }
         });
       } else {
-        FileUtils.mkdirs(outputDir);
-
         File cryptoClassFile = new File(inputDirPath + "/com/panda912/muddy/lib/Crypto.class");
         try {
+          // traverse delete old output dir
+          FileUtils.deleteIfExists(outputDir);
+          FileUtils.mkdirs(outputDir);
           // generate Crypto.class into input dir
           generateCryptoClassOnce(cryptoClassFile);
           // copy input dir to output dir
