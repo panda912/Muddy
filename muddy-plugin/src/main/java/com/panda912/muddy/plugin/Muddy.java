@@ -103,15 +103,13 @@ public class Muddy {
     transformInput.getDirectoryInputs().forEach(input -> {
       //eg. if the class file's absolute path is {@code /a/b/package/A.class}, this returns {@code /a/b}.
       File inputDir = input.getFile();
-      String inputDirPath = inputDir.getAbsolutePath();
       File outputDir = transformInvocation.getOutputProvider().getContentLocation(input.getName(), input
           .getContentTypes(), input.getScopes(), Format.DIRECTORY);
       if (transformInvocation.isIncremental()) {
         input.getChangedFiles().forEach((inputFile, status) -> {
           if (inputFile.isFile() && inputFile.getName().endsWith(".class")) {
             try {
-              File destFile = getOutputFile(inputDir, inputFile, outputDir);
-              Log.e(inputFile.getAbsolutePath() + " " + destFile.getAbsolutePath() + " " + status);
+              File destFile = Util.getOutputFile(inputDir, inputFile, outputDir);
               switch (status) {
                 case REMOVED:
                   FileUtils.deleteIfExists(destFile);
@@ -138,7 +136,8 @@ public class Muddy {
           }
         });
       } else {
-        File cryptoClassFile = new File(inputDirPath + "/com/panda912/muddy/lib/Crypto.class");
+        File cryptoClassFile = new File(Util.toSystemIndependentPath(inputDir),
+            Util.toSystemIndependentPath("/com/panda912/muddy/lib/Crypto.class"));
         try {
           // traverse delete old output dir
           FileUtils.deleteIfExists(outputDir);
@@ -153,7 +152,7 @@ public class Muddy {
 
         FileUtils.getAllFiles(inputDir).stream()
             .filter(file -> {
-              String className = file.getAbsolutePath().replace(inputDirPath + "/", "");
+              String className = Util.getRelativePath(file, inputDir);
               if (file.getName().endsWith(".class") && !cryptoClassFile.equals(file)) {
                 if (mExtension.includes != null) {
                   return isInclude(mExtension.includes, className);
@@ -168,7 +167,7 @@ public class Muddy {
             .forEach(inputFile -> {
               try {
                 byte[] bytes = generateNewClassByteArray(new FileInputStream(inputFile));
-                FileOutputStream fos = new FileOutputStream(getOutputFile(inputDir, inputFile, outputDir));
+                FileOutputStream fos = new FileOutputStream(Util.getOutputFile(inputDir, inputFile, outputDir));
                 fos.write(bytes);
                 fos.flush();
                 fos.close();
@@ -188,11 +187,12 @@ public class Muddy {
    * return false.
    */
   private boolean isInclude(List<String> includes, String className) {
+    String classPath = Util.toSystemIndependentPath(className);
     return includes.stream()
         .map(include -> include.replace(".", "/"))
         .anyMatch(include -> {
-          if (className.startsWith(include)) {
-            String end = className.substring(include.length(), className.length());
+          if (classPath.startsWith(include)) {
+            String end = classPath.substring(include.length(), classPath.length());
             return end.startsWith("/") || end.startsWith(".class") || end.startsWith("$");
           }
           return false;
@@ -207,11 +207,12 @@ public class Muddy {
    * return true.
    */
   private boolean isNotExclude(String className) {
+    String classPath = Util.toSystemIndependentPath(className);
     return mExtension.excludes.stream()
         .map(exclude -> exclude.replace(".", "/"))
         .noneMatch(exclude -> {
-          if (className.startsWith(exclude)) {
-            String end = className.substring(exclude.length(), className.length());
+          if (classPath.startsWith(exclude)) {
+            String end = classPath.substring(exclude.length(), classPath.length());
             return end.startsWith("/") || end.startsWith(".class") || end.startsWith("$");
           }
           return true;
@@ -247,20 +248,6 @@ public class Muddy {
     ModifyClassVisitor cv = new ModifyClassVisitor(Opcodes.ASM5, cw, mExtension.key);
     cr.accept(cv, Opcodes.ASM5);
     return cw.toByteArray();
-  }
-
-  /**
-   * eg. input directory's absolute path is {@code /a/b}, input file's absolute path is {@code /a/b/c/A.class},
-   * output directory's absolute path is @{code /d/e}, then the output file's absolute path is {@code /d/e/c/A.class}
-   *
-   * @param inputDir
-   * @param inputFile
-   * @param outputDir
-   * @return output file's absolute path
-   */
-  private static File getOutputFile(File inputDir, File inputFile, File outputDir) {
-    String relativePath = FileUtils.relativePossiblyNonExistingPath(inputFile, inputDir);
-    return new File(outputDir, relativePath);
   }
 
 }
