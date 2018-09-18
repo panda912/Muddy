@@ -1,8 +1,8 @@
 Muddy is an Android Plugin for simple encryption of string constants in android project.
 
-### Usage
+## Usage
 
-##### Quick Start
+### Quick Start
 
 1. Add a dependency in `build.gradle` in root project as following:
 
@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
 }
 ```
 
-##### Advanced Usage
+### Advanced Usage
 
 If you want muddy to work on the whole project except some specified packages or classes, you can use `excludes` like this:
 
