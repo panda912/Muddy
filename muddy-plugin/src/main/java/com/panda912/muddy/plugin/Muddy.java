@@ -116,7 +116,6 @@ public class Muddy {
                   break;
                 case CHANGED:
                 case ADDED:
-                  Log.e(status + ": " + destFile);
                   // added status delete dest file due to Crypto.class
                   FileUtils.deleteIfExists(destFile);
                   Files.createParentDirs(destFile);

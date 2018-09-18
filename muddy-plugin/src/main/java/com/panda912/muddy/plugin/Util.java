@@ -76,9 +76,9 @@ public class Util {
    * eg. input directory's absolute path is {@code /a/b}, input file's absolute path is {@code /a/b/c/A.class},
    * output directory's absolute path is @{code /d/e}, then the output file's absolute path is {@code /d/e/c/A.class}
    *
-   * @param inputDir
-   * @param inputFile
-   * @param outputDir
+   * @param inputDir  input directory's absolute path.
+   * @param inputFile input file's absolute path. (a fully-qualified class name)
+   * @param outputDir output directory's absolute path.
    * @return output file's absolute path
    */
   public static File getOutputFile(File inputDir, File inputFile, File outputDir) {

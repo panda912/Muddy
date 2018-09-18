@@ -34,19 +34,16 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /**
+ * java code:
  * <pre>
  * package com.panda912.muddy.lib;
- *
  * public class Crypto {
- *
  *   public static String encode(String plainText) {
  *     return xor(plainText);
  *   }
- *
  *   public static String decode(String cipherText) {
  *     return xor(cipherText);
  *   }
- *
  *   private static String xor(String str) {
  *     char[] c = str.toCharArray();
  *     for (int i = 0; i < c.length; i++) {
@@ -54,6 +51,35 @@ import org.objectweb.asm.Opcodes;
  *     }
  *     return new String(c);
  *   }
+ * }
+ * </pre>
+ * <p>
+ * javassist  code:
+ * <pre>
+ * public static void generateCode(int key) throws IOException, CannotCompileException {
+ *   ClassPool classPool = ClassPool.getDefault();
+ *   CtClass ctClass = classPool.makeClass("com.panda912.muddy.lib.Crypto");
+ *
+ *   CtMethod xor = CtNewMethod.make(
+ *   "private static String xor(String str) {\n" +
+ *   "    char[] c = str.toCharArray();\n" +
+ *   "    for (int i = 0; i < c.length; i++) {\n" +
+ *   "      c[i] = (char) (c[i] ^ " + key + ");\n" +
+ *   "    }\n" +
+ *   "    return new String(c);\n" +
+ *   "  }", ctClass);
+ *   ctClass.addMethod(xor);
+ *
+ *   CtMethod encode = CtNewMethod.make(
+ *   "public static String encode(String plainText) { return xor(plainText); }", ctClass);
+ *   ctClass.addMethod(encode);
+ *
+ *   CtMethod decode = CtNewMethod.make(
+ *   "public static String decode(String cipherText) { return xor(cipherText); }", ctClass);
+ *   ctClass.addMethod(decode);
+ *
+ *   ctClass.writeFile("./lib/build/classes/java/main");
+ *   ctClass.detach();
  * }
  * </pre>
  * <p>
