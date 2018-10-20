@@ -108,35 +108,40 @@ public class Muddy {
       File outputDir = transformInvocation.getOutputProvider().getContentLocation(input.getName(), input
           .getContentTypes(), input.getScopes(), Format.DIRECTORY);
       if (transformInvocation.isIncremental()) {
-        input.getChangedFiles().forEach((inputFile, status) -> {
-          if (inputFile.isFile() && inputFile.getName().endsWith(".class")) {
-            try {
-              File destFile = Util.getOutputFile(inputDir, inputFile, outputDir);
-              switch (status) {
-                case REMOVED:
-                  FileUtils.deleteIfExists(destFile);
-                  break;
-                case CHANGED:
-                case ADDED:
-                  // added status delete dest file due to Crypto.class
-                  FileUtils.deleteIfExists(destFile);
-                  Files.createParentDirs(destFile);
-                  if (destFile.createNewFile()) {
-                    byte[] bytes = generateNewClassByteArray(new FileInputStream(inputFile));
-                    FileOutputStream fos = new FileOutputStream(destFile);
-                    fos.write(bytes);
-                    fos.flush();
-                    fos.close();
-                  } else {
-                    throw new FileNotFoundException(destFile.getAbsolutePath() + " not found, please clean and retry!");
-                  }
-                  break;
+        input.getChangedFiles().entrySet().stream()
+            .filter(entry -> {
+              File inputFile = entry.getKey();
+              return inputFile.isFile() && inputFile.getName().endsWith(".class");
+            })
+            .forEach(entry -> {
+              try {
+                File inputFile = entry.getKey();
+                File destFile = Util.getOutputFile(inputDir, inputFile, outputDir);
+                switch (entry.getValue()) {
+                  case REMOVED:
+                    FileUtils.deleteIfExists(destFile);
+                    break;
+                  case CHANGED:
+                  case ADDED:
+                    // added status delete dest file due to Crypto.class
+                    FileUtils.deleteIfExists(destFile);
+                    Files.createParentDirs(destFile);
+                    if (destFile.createNewFile()) {
+                      byte[] bytes = generateNewClassByteArray(new FileInputStream(inputFile));
+                      FileOutputStream fos = new FileOutputStream(destFile);
+                      fos.write(bytes);
+                      fos.flush();
+                      fos.close();
+                    } else {
+                      throw new FileNotFoundException(destFile.getAbsolutePath() + " not found, please clean and " +
+                          "retry!");
+                    }
+                    break;
+                }
+              } catch (IOException e) {
+                e.printStackTrace();
               }
-            } catch (IOException e) {
-              e.printStackTrace();
-            }
-          }
-        });
+            });
       } else {
         File cryptoClassFile = new File(Util.toSystemIndependentPath(inputDir),
             Util.toSystemIndependentPath("/com/panda912/muddy/lib/Crypto.class"));
